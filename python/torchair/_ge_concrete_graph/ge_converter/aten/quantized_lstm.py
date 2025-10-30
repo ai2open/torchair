@@ -1,0 +1,41 @@
+from torchair._ge_concrete_graph.ge_converter.converter_utils import *
+
+
+@register_fx_node_ge_converter(torch.ops.aten.quantized_lstm.input_legacy)
+def conveter_aten_quantized_lstm_input_legacy(
+    input: Tensor,
+    hx: List[Tensor],
+    params: List[Tensor],
+    has_biases: bool,
+    num_layers: int,
+    dropout: float,
+    train: bool,
+    bidirectional: bool,
+    batch_first: bool,
+    *,
+    dtype: Optional[int] = None,
+    use_dynamic: bool = False,
+    meta_outputs: TensorSpec = None
+):
+    """NB: aten::quantized_lstm.input_legacy(Tensor input, Tensor[] hx, Tensor[] params, bool has_biases, int num_layers, float dropout, bool train, bool bidirectional, bool batch_first, *, ScalarType? dtype=None, bool use_dynamic=False) -> (Tensor, Tensor, Tensor)"""
+    raise NotImplementedError("torch.ops.aten.quantized_lstm.input_legacy ge_converter is not implemented!")
+
+
+@register_fx_node_ge_converter(torch.ops.aten.quantized_lstm.data_legacy)
+def conveter_aten_quantized_lstm_data_legacy(
+    data: Tensor,
+    batch_sizes: Tensor,
+    hx: List[Tensor],
+    params: List[Tensor],
+    has_biases: bool,
+    num_layers: int,
+    dropout: float,
+    train: bool,
+    bidirectional: bool,
+    *,
+    dtype: Optional[int] = None,
+    use_dynamic: bool = False,
+    meta_outputs: TensorSpec = None
+):
+    """NB: aten::quantized_lstm.data_legacy(Tensor data, Tensor batch_sizes, Tensor[] hx, Tensor[] params, bool has_biases, int num_layers, float dropout, bool train, bool bidirectional, *, ScalarType? dtype=None, bool use_dynamic=False) -> (Tensor, Tensor, Tensor)"""
+    raise NotImplementedError("torch.ops.aten.quantized_lstm.data_legacy ge_converter is not implemented!")

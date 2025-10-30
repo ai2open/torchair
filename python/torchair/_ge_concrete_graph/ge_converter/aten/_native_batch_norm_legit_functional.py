@@ -1,0 +1,70 @@
+from torchair._ge_concrete_graph.ge_converter.converter_utils import *
+
+
+@declare_supported(
+    [
+        Support(F32(2, 2, 2), F32(2), F32(2), F32(2), F32(2), training=True, momentum=0.9, eps=1e-5),
+        Support(F32(2, 2, 2, 2), F32(2), F32(2), F32(2), F32(2), training=True, momentum=0.9, eps=1e-5),
+        Support(F32(2, 2, 2, 2, 2), F32(2), F32(2), F32(2), F32(2), training=True, momentum=0.9, eps=1e-5),
+        Support(F32(2, 2, 2, 2), None, None, F32(2), F32(2), training=True, momentum=0.9, eps=1e-5),
+    ]
+)
+@register_fx_node_ge_converter(torch.ops.aten._native_batch_norm_legit_functional.default)
+def conveter_aten__native_batch_norm_legit_functional_default(
+    input: Tensor,
+    weight: Optional[Tensor],
+    bias: Optional[Tensor],
+    running_mean: Tensor,
+    running_var: Tensor,
+    training: bool,
+    momentum: float,
+    eps: float,
+    meta_outputs: TensorSpec = None,
+):
+    """NB: aten::_native_batch_norm_legit_functional(Tensor input, Tensor? weight, Tensor? bias, Tensor running_mean, Tensor running_var, bool training, float momentum, float eps) -> (Tensor, Tensor, Tensor, Tensor running_mean_out, Tensor running_var_out)"""
+    if not training:
+        raise RuntimeError(
+            "torch.ops.aten._native_batch_norm_legit_functional.default ge_converter is not implemented while training is False!"
+        )
+    dim = input.rank
+    if dim < 2:
+        raise RuntimeError("torch.ops.aten._native_batch_norm_legit_functional.default "
+                           "ge_converter is not implemented while input dim <2!")
+    input_size = ge.Shape(input, dtype=DataType.DT_INT32)
+
+    if weight is None:
+        weight = ge.Fill(ge.Gather(input_size, 1), ge.Cast(1., dst_type=input.dtype))
+        
+    if bias is None:
+        bias = ge.Fill(ge.Gather(input_size, 1), ge.Cast(0., dst_type=input.dtype))
+
+    if dim > 5:
+        shape_list = ge.Pack([ge.Gather(input_size, 0), ge.Gather(input_size, 1), ge.Gather(input_size, 2),
+                              ge.Gather(input_size, 3), -1], N=5, axis=0)
+        input = ge.Reshape(input, shape_list)
+
+    # Prevent op BNTrainingUpdate from modifying value of src running_mean and runnning_var.
+    running_mean = ge.TensorMove(running_mean)
+    running_var = ge.TensorMove(running_var)
+
+    if dim == 2 or dim == 3:
+        input = ge.Unsqueeze(input, axes=list(range(dim, 4)))
+
+    output, mean, var, save_mean, save_rstd = ge.BatchNormV3(input, weight, bias, running_mean, \
+                                                            running_var, epsilon=eps, \
+                                                            momentum=momentum, is_training=training)
+    if dim <= 4:
+        specific_op_input_layout(output, indices=0, layout="NCHW")
+        specific_op_output_layout(output, indices=0, layout="NCHW")
+        if dim == 2 or dim == 3:
+            output = ge.Squeeze(output, axis=list(range(3, dim - 1, -1)))
+    else:
+        specific_op_input_layout(output, indices=0, layout="NCDHW")
+        specific_op_output_layout(output, indices=0, layout="NCDHW")
+        if dim > 5:
+            output = ge.Reshape(output, input_size)
+            specific_op_input_layout(output, indices=[0, 1], layout="ND")
+            specific_op_output_layout(output, indices=0, layout="ND")
+
+    result = (output, mean, var, save_mean, save_rstd)
+    return result

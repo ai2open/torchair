@@ -1,0 +1,25 @@
+from torchair._ge_concrete_graph.ge_converter.converter_utils import *
+
+
+@register_fx_node_ge_converter(torch.ops.aten.tril_indices.default)
+def conveter_aten_tril_indices_default(
+    row: int,
+    col: int,
+    offset: int = 0,
+    *,
+    dtype: Optional[int] = 4,
+    layout: Optional[int] = None,
+    device: Optional[Device] = None,
+    pin_memory: Optional[bool] = None,
+    meta_outputs: TensorSpec = None
+):
+    """NB: aten::tril_indices(int row, int col, int offset=0, *, ScalarType? dtype=4, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor"""
+    raise NotImplementedError("torch.ops.aten.tril_indices.default ge_converter is not implemented!")
+
+
+@register_fx_node_ge_converter(torch.ops.aten.tril_indices.out)
+def conveter_aten_tril_indices_out(
+    row: int, col: int, offset: int = 0, *, out: Tensor = None, meta_outputs: TensorSpec = None
+):
+    """NB: aten::tril_indices.out(int row, int col, int offset=0, *, Tensor(a!) out) -> Tensor(a!)"""
+    raise NotImplementedError("torch.ops.aten.tril_indices.out ge_converter is not implemented!")
